@@ -146,6 +146,7 @@ module.component('gmfAuthentication', authenticationComponent);
 class AuthenticationController {
   /**
    * @param {JQuery} $element Element.
+   * @param {boolean} gmfTwoFactorAuth Two factor authentication is required.
    * @param {angular.gettext.gettextCatalog} gettextCatalog Gettext catalog.
    * @param {import("gmf/authentication/Service.js").AuthenticationService} gmfAuthenticationService
    *    GMF Authentication service
@@ -156,7 +157,7 @@ class AuthenticationController {
    * @ngdoc controller
    * @ngname GmfAuthenticationController
    */
-  constructor($element, gettextCatalog, gmfAuthenticationService, gmfUser, ngeoNotification) {
+  constructor($element, gmfTwoFactorAuth, gettextCatalog, gmfAuthenticationService, gmfUser, ngeoNotification) {
 
     /**
      * @type {JQuery}
@@ -186,6 +187,11 @@ class AuthenticationController {
      * @private
      */
     this.notification_ = ngeoNotification;
+
+    /**
+     * @type {boolean}
+     */
+    this.twoFactorAuth = gmfTwoFactorAuth;
 
     /**
      * @type {boolean}
@@ -243,6 +249,11 @@ class AuthenticationController {
      * @type {string}
      */
     this.pwdVal = '';
+
+    /**
+     * @type {string}
+     */
+    this.otpVal;
 
     // CHANGE PASSWORD form values
 
@@ -350,17 +361,22 @@ class AuthenticationController {
     if (this.pwdVal === '') {
       errors.push(gettextCatalog.getString('The password is required.'));
     }
+    if (this.twoFactorAuth && !this.otpVal) {
+      errors.push(gettextCatalog.getString('The authentication code is required.'));
+    }
     if (errors.length) {
       this.setError_(errors);
     } else {
-      this.gmfAuthenticationService_.login(this.loginVal, this.pwdVal)
+      this.gmfAuthenticationService_.login(this.loginVal, this.pwdVal, this.otpVal)
         .then(() => {
           this.loginVal = '';
           this.pwdVal = '';
+          this.otpVal = '';
           this.resetError_();
         })
         .catch(() => {
           this.pwdVal = '';
+          this.otpVal = '';
           this.setError_(gettextCatalog.getString('Incorrect credentials or disabled account.'));
         });
     }
